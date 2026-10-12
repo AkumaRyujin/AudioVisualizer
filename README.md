@@ -5,6 +5,9 @@ Visualizador cartesiano de espectro de audio de alto rendimiento diseñado para 
 > [!WARNING]
 > **Aviso de Estado del Proyecto: Prueba de Concepto (Estado Alfa)**  
 > Este software es actualmente una **prueba de concepto (Proof of Concept - PoC)** y se encuentra en **fase alfa de desarrollo**. Está sujeto a cambios significativos de arquitectura, parámetros de configuración y puede presentar comportamientos no contemplados en configuraciones de escritorio no estándar. No se recomienda su uso en entornos de producción críticos.
+>
+> **Compatibilidad de Entorno y Distribución:**  
+> Este proyecto ha sido desarrollado y probado **exclusivamente en Arch Linux bajo el compositor Hyprland**. Cualquier intento de instalación, compilación o ejecución en otras distribuciones (Ubuntu, Debian, Fedora, openSUSE, etc.) o con otros gestores de ventanas / compositores (Sway, GNOME, KDE Plasma, X11) **queda estrictamente bajo el propio riesgo y responsabilidad del usuario**. No se ofrece soporte ni garantías de funcionamiento fuera del entorno Arch Linux + Hyprland.
 
 ---
 
@@ -44,45 +47,100 @@ Visualizador cartesiano de espectro de audio de alto rendimiento diseñado para 
 
 ## Requisitos del Sistema
 
-### Requisitos Mínimos
-- **Sistema Operativo**: Linux (Kernel 5.15 o superior recomendado).
-- **Servidor de Audio**: PipeWire (con `pipewire-pulse`) o PulseAudio en ejecución.
-- **Compositor de Ventanas**: Wayland (probado exhaustivamente en Hyprland) o servidor X11.
-- **Procesador**: Arquitectura x86_64 o ARM64 con soporte de instrucciones vectoriales básicas.
+### Requisitos Mínimos (Entorno Probado)
+- **Sistema Operativo**: Arch Linux (probado en Kernel 6.x).
+- **Compositor de Ventanas**: Hyprland (Wayland).
+- **Servidor de Audio**: PipeWire (con `pipewire-pulse`) o PulseAudio.
 - **Memoria RAM**: 150 MB disponibles.
 
-### Dependencias de Compilación
-- Compilador con soporte C++20 (`gcc` 11+ o `clang` 13+)
-- CMake 3.16 o superior
-- Qt 6 (módulos `Core`, `Gui`, `Quick`, `Qml`, `QuickControls2`, `Widgets`)
-- FFTW3 (`libfftw3-dev` en Debian/Ubuntu, `fftw` en Arch Linux)
-- libpulse (`libpulse-dev` en Debian/Ubuntu, `libpulse` en Arch Linux)
-- `hyprpicker` (opcional, para el selector de color de pantalla en Hyprland)
+### Dependencias del Sistema (Arch Linux)
+- Compilador C++20 (`gcc` o `clang`)
+- Herramientas de compilación: `base-devel`, `cmake`, `ninja`
+- Qt 6: `qt6-base`, `qt6-declarative`
+- Audio y Matemáticas: `fftw`, `libpulse`
+- Integración de escritorio: `quickshell` (para la capa inferior de fondo de pantalla), `hyprpicker` (para selector de color)
 
 ---
 
-### Instalación Automática (Recomendada):
-El repositorio incluye un script de instalación desatendido que detecta dependencias, compila, instala los binarios, iconos, integración de escritorio y configura el inicio automático y atajos en Hyprland / Omarchy:
+## Compilación e Instalación
+
+### Método 1: Instalación Integral con un Solo Comando (Recomendado)
+El script `install.sh` se encarga de instalar los pre-requisitos del sistema (vía `pacman` en Arch Linux), compilar el proyecto en modo optimizado, instalar los binarios y configurar Hyprland (autostart y atajo `SUPER + M`):
 
 ```bash
-# Otorgar permisos de ejecución si es necesario y ejecutar
-./install.sh
+# 1. Clonar el repositorio
+git clone https://github.com/AkumaRyujin/AudioVisualizer.git
+cd AudioVisualizer
 
-# Opciones disponibles:
-./install.sh --prefix ~/.local     # Prefijo personalizado (por defecto ~/.local)
-./install.sh --uninstall           # Desinstalación limpia de binarios y configuraciones
-./install.sh --no-autostart        # No registrar autostart ni atajos en Hyprland
+# 2. Ejecutar la instalación completa (pre-requisitos del sistema + aplicación)
+chmod +x install.sh
+./install.sh --install-deps
 ```
 
-### Compilación Manual con CMake:
+---
+
+### Método 2: Script Autónomo de Instalación Completa
+Si deseas copiar y pegar un script independiente para instalar todo de una vez en tu terminal (Pre-requisitos + AudioViewer):
+
 ```bash
-# Configurar en modo optimizado Release
+#!/usr/bin/env bash
+# ==============================================================================
+# Instalación integral de AudioViewer (Pre-requisitos + Aplicación)
+# Probado exclusivamente en Arch Linux con Hyprland.
+# ==============================================================================
+set -euo pipefail
+
+echo "==> Instalando dependencias del sistema en Arch Linux..."
+sudo pacman -S --needed --noconfirm \
+    base-devel cmake ninja qt6-base qt6-declarative \
+    fftw libpulse hyprpicker quickshell
+
+echo "==> Compilando e instalando AudioViewer..."
+PREFIX="${PREFIX:-$HOME/.local}"
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PREFIX"
+cmake --build build -j"$(nproc)"
+cmake --install build
+
+echo "==> Configurando permisos y bases de datos..."
+chmod +x "$PREFIX/bin/AudioViewer"
+chmod +x "$PREFIX/bin/audioviewer-bg"
+chmod +x "$PREFIX/bin/audioviewer-toggle"
+
+command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$PREFIX/share/applications" 2>/dev/null || true
+command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t "$PREFIX/share/icons/hicolor" 2>/dev/null || true
+
+echo "==> Configurando Hyprland (autostart y atajo SUPER + M)..."
+HYPR_CONFIG_DIR="$HOME/.config/hypr"
+if [ -d "$HYPR_CONFIG_DIR" ]; then
+    [ -f "$HYPR_CONFIG_DIR/autostart.lua" ] && ! grep -q "audioviewer-bg" "$HYPR_CONFIG_DIR/autostart.lua" && \
+        printf '\no.launch_on_start("%s/bin/audioviewer-bg")\n' "$PREFIX" >> "$HYPR_CONFIG_DIR/autostart.lua"
+    [ -f "$HYPR_CONFIG_DIR/bindings.lua" ] && ! grep -q "audioviewer-toggle" "$HYPR_CONFIG_DIR/bindings.lua" && \
+        printf '\n-- Desktop audio visualizer (AudioViewer)\no.bind("SUPER + M", "Audio visualizer toggle", "%s/bin/audioviewer-toggle")\n' "$PREFIX" >> "$HYPR_CONFIG_DIR/bindings.lua"
+fi
+
+echo "==> Iniciando capa de visualización en el escritorio..."
+pkill -f "quickshell.*desktop.qml" 2>/dev/null || true
+sleep 0.5
+setsid -f "$PREFIX/bin/audioviewer-bg" >/dev/null 2>&1 || true
+
+echo "==> AudioViewer instalado y funcionando con exito."
+```
+
+---
+
+### Opciones de `install.sh`:
+| Opción | Descripción |
+| :--- | :--- |
+| `--install-deps`, `-d` | Instala automáticamente las dependencias del sistema antes de compilar (Arch Linux). |
+| `--prefix <ruta>` | Especifica el prefijo de instalación (por defecto: `$HOME/.local`). |
+| `--uninstall` | Desinstalación limpia de binarios, scripts, plugins QML y configuración de Hyprland. |
+| `--no-autostart` | Omite la configuración del inicio de sesión y atajo en Hyprland. |
+| `--help`, `-h` | Muestra el resumen de opciones disponibles. |
+
+### Compilación Manual con CMake (Sin script):
+```bash
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/.local"
-
-# Compilar
 cmake --build build -j$(nproc)
-
-# Instalar
 cmake --install build
 ```
 

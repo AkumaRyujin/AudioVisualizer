@@ -39,6 +39,8 @@ print_usage() {
 Usage: ./install.sh [OPTIONS]
 
 Options:
+    --install-deps, -d  Install all prerequisites using the system package manager
+                        (Official support: Arch Linux with pacman)
     --prefix <path>     Specify installation prefix (default: \$HOME/.local)
     --uninstall         Uninstall AudioViewer and desktop configurations
     --no-autostart      Do not configure Hyprland autostart or keybindings
@@ -49,9 +51,14 @@ EOF
 # Parse command line options
 AUTOSTART=true
 DO_UNINSTALL=false
+INSTALL_DEPS=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --install-deps|-d)
+            INSTALL_DEPS=true
+            shift
+            ;;
         --prefix)
             PREFIX="$2"
             shift 2
@@ -118,12 +125,42 @@ if [ "$DO_UNINSTALL" = true ]; then
     exit 0
 fi
 
+install_system_dependencies() {
+    log_info "Installing system prerequisites..."
+    if command -v pacman >/dev/null 2>&1; then
+        log_info "Arch Linux detected. Installing official packages..."
+        sudo pacman -S --needed --noconfirm \
+            base-devel cmake ninja qt6-base qt6-declarative fftw libpulse hyprpicker quickshell
+    elif command -v apt-get >/dev/null 2>&1; then
+        log_warn "Debian/Ubuntu detected. AudioViewer is tested exclusively on Arch Linux with Hyprland. Proceeding at your own risk..."
+        sudo apt-get update
+        sudo apt-get install -y \
+            build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev \
+            qml6-module-qtquick-controls libfftw3-dev libpulse-dev
+    elif command -v dnf >/dev/null 2>&1; then
+        log_warn "Fedora detected. AudioViewer is tested exclusively on Arch Linux with Hyprland. Proceeding at your own risk..."
+        sudo dnf install -y \
+            gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtdeclarative-devel \
+            fftw-devel pulseaudio-libs-devel
+    else
+        log_error "Unsupported package manager. Please install dependencies manually."
+        exit 1
+    fi
+    log_success "Prerequisites installed successfully."
+}
+
+if [ "$INSTALL_DEPS" = true ]; then
+    install_system_dependencies
+fi
+
 # 1. Verification of build and runtime dependencies
+log_warn "Compatibility Notice: AudioViewer is tested exclusively on Arch Linux with Hyprland. Usage on other distributions or window managers is at your own risk."
 log_info "Checking dependencies..."
 
 check_cmd() {
     if ! command -v "$1" >/dev/null 2>&1; then
-        log_error "Required dependency '$1' not found. Please install it before proceeding."
+        log_error "Required dependency '$1' not found."
+        log_error "Tip: run './install.sh --install-deps' to install prerequisites automatically (Arch Linux)."
         exit 1
     fi
 }
@@ -134,23 +171,27 @@ check_cmd pkg-config
 # Check C++ compiler
 if ! command -v g++ >/dev/null 2>&1 && ! command -v clang++ >/dev/null 2>&1; then
     log_error "No compatible C++ compiler found (g++ or clang++)."
+    log_error "Tip: run './install.sh --install-deps' to install prerequisites automatically (Arch Linux)."
     exit 1
 fi
 
 # Check libraries via pkg-config
 if ! pkg-config --exists libpulse; then
     log_error "PulseAudio development libraries (libpulse) not found."
+    log_error "Tip: run './install.sh --install-deps' to install prerequisites automatically (Arch Linux)."
     exit 1
 fi
 
 if ! pkg-config --exists fftw3; then
     log_error "FFTW3 development libraries (fftw3) not found."
+    log_error "Tip: run './install.sh --install-deps' to install prerequisites automatically (Arch Linux)."
     exit 1
 fi
 
 # Check for quickshell (required for native Hyprland wallpaper integration)
 if ! command -v quickshell >/dev/null 2>&1; then
     log_warn "Quickshell is not installed. Layer-shell wallpaper visualizer requires quickshell."
+    log_warn "Tip: run './install.sh --install-deps' to install quickshell (Arch Linux)."
 else
     log_info "Found Quickshell: $(quickshell --version 2>/dev/null || echo 'installed')"
 fi
