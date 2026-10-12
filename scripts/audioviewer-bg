@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# AudioViewer Desktop Wallpaper Layer Launcher
+# Launches visualizer bars natively integrated into the Hyprland bottom layer (wlr-layer-shell)
+set -euo pipefail
+
+SHARE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/audioviewer"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Search for desktop.qml
+if [ -f "$SHARE_DIR/desktop.qml" ]; then
+    QML_FILE="$SHARE_DIR/desktop.qml"
+elif [ -f "$REPO_DIR/quickshell/desktop.qml" ]; then
+    QML_FILE="$REPO_DIR/quickshell/desktop.qml"
+elif [ -f "/usr/share/audioviewer/desktop.qml" ]; then
+    QML_FILE="/usr/share/audioviewer/desktop.qml"
+else
+    echo "Error: desktop.qml not found" >&2
+    exit 1
+fi
+
+export QML_IMPORT_PATH="$SHARE_DIR/qml:$REPO_DIR/build/qml:${QML_IMPORT_PATH:-}"
+export LD_LIBRARY_PATH="${HOME}/.local/lib:$REPO_DIR/build:${LD_LIBRARY_PATH:-}"
+
+exec quickshell -d -p "$QML_FILE"

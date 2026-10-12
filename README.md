@@ -61,32 +61,45 @@ Visualizador cartesiano de espectro de audio de alto rendimiento diseñado para 
 
 ---
 
-## Compilación e Instalación
+### Instalación Automática (Recomendada):
+El repositorio incluye un script de instalación desatendido que detecta dependencias, compila, instala los binarios, iconos, integración de escritorio y configura el inicio automático y atajos en Hyprland / Omarchy:
 
-### En Arch Linux / EndeavourOS / Manjaro:
 ```bash
-sudo pacman -S base-devel cmake qt6-base qt6-declarative qt6-quickcontrols2 fftw libpulse hyprpicker
+# Otorgar permisos de ejecución si es necesario y ejecutar
+./install.sh
+
+# Opciones disponibles:
+./install.sh --prefix ~/.local     # Prefijo personalizado (por defecto ~/.local)
+./install.sh --uninstall           # Desinstalación limpia de binarios y configuraciones
+./install.sh --no-autostart        # No registrar autostart ni atajos en Hyprland
 ```
 
-### En Ubuntu / Debian:
+### Compilación Manual con CMake:
 ```bash
-sudo apt update
-sudo apt install build-essential cmake qt6-base-dev qt6-declarative-dev qml6-module-qtquick-controls libfftw3-dev libpulse-dev
-```
+# Configurar en modo optimizado Release
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 
-### Construcción del Proyecto:
-```bash
-# Clonar o situarse en el directorio del proyecto
-cd AudioViewer
-
-# Configurar el entorno de compilación en modo optimizado Release
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-# Compilar utilizando todos los núcleos disponibles
+# Compilar
 cmake --build build -j$(nproc)
+
+# Instalar
+cmake --install build
 ```
 
-El ejecutable compilado se generará en `./build/AudioViewer`.
+El ejecutable principal se instalará en `~/.local/bin/AudioViewer`.
+
+---
+
+## Integración con Hyprland y Fondo de Escritorio
+
+AudioViewer incluye integración nativa con la capa inferior del compositor Wayland (`zwlr_layer_shell_v1`, capa `bottom`) para mostrar las barras de espectro directamente sobre el fondo de pantalla en todos los monitores activos, con aceleración gráfica por hardware y sin depender de herramientas externas como `cava-bg`.
+
+### Componentes de Integración:
+- `audioviewer-bg`: Inicia el visualizador en la capa inferior de Wayland sobre el fondo de pantalla.
+- `audioviewer-toggle`: Alterna (enciende/apaga) la visibilidad de las barras en el escritorio.
+- **Atajo por defecto en Hyprland**: `SUPER + M` para alternar la visualización.
+- **Inicio de sesión**: Configurado automáticamente en `~/.config/hypr/autostart.lua` o `hyprland.conf`.
+- **Adaptación cromática reactiva**: Las barras adoptan inmediatamente la paleta del tema activo en Hyprland/Omarchy y se actualizan en caliente cuando el tema del sistema cambia.
 
 ---
 

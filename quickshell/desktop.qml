@@ -94,6 +94,8 @@ ShellRoot {
                     v.colorPalette.setColorsFromHex(cfg.customColors);
                 } else if (cfg.colorPreset !== undefined) {
                     v.colorPalette.loadPreset(cfg.colorPreset);
+                } else {
+                    v.colorPalette.applyHyprlandTheme();
                 }
                 if (cfg.colorMode !== undefined) v.colorMode = cfg.colorMode;
             }
@@ -140,6 +142,8 @@ ShellRoot {
                 if (cfgMgr.hasSavedConfig()) {
                     var cfg = cfgMgr.loadConfig();
                     root.applyConfigToAll(cfg);
+                } else {
+                    visualizerItem.colorPalette.applyHyprlandTheme();
                 }
             }
         }

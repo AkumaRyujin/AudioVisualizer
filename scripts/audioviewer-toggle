@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Toggle AudioViewer desktop wallpaper visualizer
+if pgrep -f "quickshell.*desktop.qml" >/dev/null; then
+    pkill -f "desktop.qml"
+else
+    if command -v audioviewer-bg >/dev/null 2>&1; then
+        setsid -f audioviewer-bg >/dev/null 2>&1
+    elif [ -x "$HOME/.local/bin/audioviewer-bg" ]; then
+        setsid -f "$HOME/.local/bin/audioviewer-bg" >/dev/null 2>&1
+    else
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        if [ -x "$SCRIPT_DIR/audioviewer-bg" ]; then
+            setsid -f "$SCRIPT_DIR/audioviewer-bg" >/dev/null 2>&1
+        fi
+    fi
+fi

@@ -120,3 +120,18 @@ install(FILES audioviewer.desktop
 install(FILES resources/icons/audioviewer.svg
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
 )
+
+install(FILES quickshell/desktop.qml
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/audioviewer
+)
+
+install(PROGRAMS
+    scripts/audioviewer-bg
+    scripts/audioviewer-toggle
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/qml/AudioViewer
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/audioviewer/qml
+)
+
