@@ -98,3 +98,25 @@ target_link_libraries(AudioViewer PRIVATE
 target_compile_options(AudioViewer PRIVATE
     -Wall -Wextra
 )
+
+# Reglas de instalación estándar del sistema
+include(GNUInstallDirs)
+
+set_target_properties(AudioViewer PROPERTIES
+    INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR};$ORIGIN"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+)
+
+install(TARGETS AudioViewer AudioViewerPlugin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(FILES audioviewer.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(FILES resources/icons/audioviewer.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+)

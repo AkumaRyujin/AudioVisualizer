@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=AudioViewer
+GenericName=Visualizador de Audio
+Comment=Visualizador de espectro de audio de alto rendimiento
+Exec=/home/sergio/.local/bin/AudioViewer
+Icon=audioviewer
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=audio;visualizer;spectrum;cava;hyprland;fft;
+StartupWMClass=AudioViewer
+Actions=Background;
+
+[Desktop Action Background]
+Name=Iniciar en Fondo de Pantalla
+Exec=/home/sergio/.local/bin/AudioViewer -b
