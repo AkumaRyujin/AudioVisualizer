@@ -1,0 +1,37 @@
+# Build directories and artifacts
+build/
+bin/
+lib/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Qt / QML generated files
+.rcc/
+*_autogen/
+*.qmlc
+*.jsc
+.qmlls.ini
+*.metatypes.json
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Logs & temp
+*.log
+scratch/
+tmp/
